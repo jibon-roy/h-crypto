@@ -191,26 +191,74 @@ var rsaDecrypt = (encrypted, privateKey) => {
   return crypto.privateDecrypt(privateKey, Buffer.from(encrypted, "base64")).toString("utf8");
 };
 
+// src/hybrid/sodium.ts
+import sodium from "libsodium-wrappers";
+async function ready() {
+  await sodium.ready;
+  return sodium;
+}
+function toBase64(buf) {
+  if (typeof window !== "undefined") {
+    let binary = "";
+    for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
+    return btoa(binary);
+  }
+  const Buffer2 = __require("buffer").Buffer;
+  return Buffer2.from(buf).toString("base64");
+}
+function fromBase64(b64) {
+  if (typeof window !== "undefined") {
+    const binary = atob(b64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+  const Buffer2 = __require("buffer").Buffer;
+  return new Uint8Array(Buffer2.from(b64, "base64"));
+}
+var sodiumSeal = async (plaintext, recipientPublicKeyB64) => {
+  const s = await ready();
+  const pub = fromBase64(recipientPublicKeyB64);
+  const pt = new TextEncoder().encode(plaintext);
+  const cipher = s.crypto_box_seal(pt, pub);
+  return toBase64(cipher);
+};
+var sodiumUnseal = async (cipherB64, recipientPublicKeyB64, recipientPrivateKeyB64) => {
+  const s = await ready();
+  const pub = fromBase64(recipientPublicKeyB64);
+  const priv = fromBase64(recipientPrivateKeyB64);
+  const cipher = fromBase64(cipherB64);
+  const opened = s.crypto_box_seal_open(cipher, pub, priv);
+  return new TextDecoder().decode(opened);
+};
+
 // src/hybrid/hybridEncryptor.ts
-var hybridEncrypt = (data, config) => {
-  const aesEncrypted = aesEncrypt(data, config.aes);
+var hybridEncrypt = async (data, config) => {
+  const aesEncrypted = await aesEncrypt(data, config.aes);
   const keyData = JSON.stringify({
     secretKey: config.aes.secretKey,
     iv: config.aes.iv,
     salt: config.aes.salt
   });
-  const encryptedKey = rsaEncrypt(keyData, config.rsa.publicKey);
+  const encryptedKey = await sodiumSeal(keyData, config.rsa.publicKey);
   return JSON.stringify({
     encryptedData: aesEncrypted,
     encryptedKey
   });
 };
-var hybridDecrypt = (token, config) => {
+var hybridDecrypt = async (token, config) => {
   try {
     const { encryptedData, encryptedKey } = JSON.parse(token);
-    const keyInfo = JSON.parse(rsaDecrypt(encryptedKey, config.rsa.privateKey));
+    const keyInfo = JSON.parse(
+      await sodiumUnseal(
+        encryptedKey,
+        config.rsa.publicKey,
+        config.rsa.privateKey
+      )
+    );
     const aesConfig = { ...config.aes, ...keyInfo };
-    return aesDecrypt(encryptedData, aesConfig);
+    return await aesDecrypt(encryptedData, aesConfig);
   } catch {
     return null;
   }

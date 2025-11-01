@@ -26,8 +26,8 @@ declare const generateRSAKeys: (bits?: number) => RSAKeyPair;
 declare const rsaEncrypt: (data: string, publicKey: string) => string;
 declare const rsaDecrypt: (encrypted: string, privateKey: string) => string;
 
-declare const hybridEncrypt: (data: Record<string, any>, config: HybridEncryptConfig) => string;
-declare const hybridDecrypt: (token: string, config: HybridEncryptConfig) => Record<string, any> | null;
+declare const hybridEncrypt: (data: Record<string, any>, config: HybridEncryptConfig) => Promise<string>;
+declare const hybridDecrypt: (token: string, config: HybridEncryptConfig) => Promise<Record<string, any> | null>;
 
 declare const randomKey: (length?: number) => string;
 declare const randomIV: () => string;

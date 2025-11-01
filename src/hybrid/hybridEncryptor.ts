@@ -1,5 +1,5 @@
 import { aesEncrypt, aesDecrypt } from "./aes";
-import { rsaEncrypt, rsaDecrypt } from "./rsa";
+import { sodiumSeal, sodiumUnseal } from "./sodium";
 import { HybridEncryptConfig } from "../types";
 
 export const hybridEncrypt = async (
@@ -8,14 +8,14 @@ export const hybridEncrypt = async (
 ): Promise<string> => {
   const aesEncrypted = await aesEncrypt(data, config.aes);
 
-  // Encrypt AES key & IV using RSA public key
+  // Encrypt AES key & IV using recipient public key (sodium sealed box)
   const keyData = JSON.stringify({
     secretKey: config.aes.secretKey,
     iv: config.aes.iv,
     salt: config.aes.salt,
   });
 
-  const encryptedKey = rsaEncrypt(keyData, config.rsa.publicKey);
+  const encryptedKey = await sodiumSeal(keyData, config.rsa.publicKey);
 
   return JSON.stringify({
     encryptedData: aesEncrypted,
@@ -30,8 +30,14 @@ export const hybridDecrypt = async (
   try {
     const { encryptedData, encryptedKey } = JSON.parse(token);
 
-    // Decrypt AES key info using private RSA key
-    const keyInfo = JSON.parse(rsaDecrypt(encryptedKey, config.rsa.privateKey));
+    // Decrypt AES key info using recipient keypair (sodium sealed box)
+    const keyInfo = JSON.parse(
+      await sodiumUnseal(
+        encryptedKey,
+        config.rsa.publicKey,
+        config.rsa.privateKey
+      )
+    );
 
     // Merge decrypted AES config with provided
     const aesConfig = { ...config.aes, ...keyInfo };

@@ -1,5 +1,5 @@
 import { hybridEncrypt, hybridDecrypt } from "../hybrid/hybridEncryptor";
-import { generateRSAKeys } from "../hybrid/rsa";
+import { generateSodiumKeyPair } from "../hybrid/sodium";
 import { randomKey, randomIV } from "../utils/keyGenerator";
 
 describe("Hybrid encrypt/decrypt", () => {
@@ -10,8 +10,8 @@ describe("Hybrid encrypt/decrypt", () => {
       salt: "salt",
       algorithm: "aes-256-cbc",
     };
-    // use 2048 bits so RSA can encrypt the AES key JSON payload reliably
-    const rsa = generateRSAKeys(2048);
+    // generate a sodium keypair for sealed-box encryption of the AES key info
+    const rsa = await generateSodiumKeyPair();
 
     const cfg = { aes, rsa } as any;
     const data = { ok: true, value: 123 };
