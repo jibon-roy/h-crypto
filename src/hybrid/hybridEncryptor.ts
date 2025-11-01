@@ -2,11 +2,11 @@ import { aesEncrypt, aesDecrypt } from "./aes";
 import { rsaEncrypt, rsaDecrypt } from "./rsa";
 import { HybridEncryptConfig } from "../types";
 
-export const hybridEncrypt = (
+export const hybridEncrypt = async (
   data: Record<string, any>,
   config: HybridEncryptConfig
-): string => {
-  const aesEncrypted = aesEncrypt(data, config.aes);
+): Promise<string> => {
+  const aesEncrypted = await aesEncrypt(data, config.aes);
 
   // Encrypt AES key & IV using RSA public key
   const keyData = JSON.stringify({
@@ -23,10 +23,10 @@ export const hybridEncrypt = (
   });
 };
 
-export const hybridDecrypt = (
+export const hybridDecrypt = async (
   token: string,
   config: HybridEncryptConfig
-): Record<string, any> | null => {
+): Promise<Record<string, any> | null> => {
   try {
     const { encryptedData, encryptedKey } = JSON.parse(token);
 
@@ -36,7 +36,7 @@ export const hybridDecrypt = (
     // Merge decrypted AES config with provided
     const aesConfig = { ...config.aes, ...keyInfo };
 
-    return aesDecrypt(encryptedData, aesConfig);
+    return await aesDecrypt(encryptedData, aesConfig);
   } catch {
     return null;
   }

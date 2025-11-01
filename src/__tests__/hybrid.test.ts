@@ -3,7 +3,7 @@ import { generateRSAKeys } from "../hybrid/rsa";
 import { randomKey, randomIV } from "../utils/keyGenerator";
 
 describe("Hybrid encrypt/decrypt", () => {
-  test("roundtrip encrypt and decrypt returns original object", () => {
+  test("roundtrip encrypt and decrypt returns original object", async () => {
     const aes = {
       secretKey: randomKey(32),
       iv: randomIV(),
@@ -16,10 +16,10 @@ describe("Hybrid encrypt/decrypt", () => {
     const cfg = { aes, rsa } as any;
     const data = { ok: true, value: 123 };
 
-    const token = hybridEncrypt(data, cfg);
+    const token = await hybridEncrypt(data, cfg);
     expect(typeof token).toBe("string");
 
-    const out = hybridDecrypt(token, cfg);
+    const out = await hybridDecrypt(token, cfg);
     expect(out).toEqual(data);
   });
 });

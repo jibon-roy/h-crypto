@@ -3,7 +3,7 @@ import { randomKey, randomIV } from "../utils/keyGenerator";
 import type { AESConfig } from "../types";
 
 describe("AES encrypt/decrypt", () => {
-  test("roundtrip encrypt and decrypt returns original data", () => {
+  test("roundtrip encrypt and decrypt returns original data", async () => {
     const config: AESConfig = {
       secretKey: randomKey(32),
       iv: randomIV(),
@@ -12,10 +12,10 @@ describe("AES encrypt/decrypt", () => {
     };
 
     const payload = { hello: "world", n: 42 };
-    const encrypted = aesEncrypt(payload, config);
+    const encrypted = await aesEncrypt(payload, config);
     expect(typeof encrypted).toBe("string");
 
-    const decrypted = aesDecrypt(encrypted, config);
+    const decrypted = await aesDecrypt(encrypted, config);
     expect(decrypted).toEqual(payload);
   });
 });
