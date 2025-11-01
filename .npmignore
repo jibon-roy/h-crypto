@@ -1,0 +1,45 @@
+# Exclude source files and tests — we publish built files in /dist
+src/
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+
+# TypeScript sources and build config
+*.ts
+*.tsx
+tsconfig.json
+
+# Build tool and test configs
+jest.config.cjs
+jest.config.*
+tsup.config.*
+eslint.config.cjs
+.eslintrc*
+
+# Editor and system files
+.vscode/
+.idea/
+.DS_Store
+
+# Git and CI
+.git/
+.github/
+
+# Dependencies and lockfiles
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment and logs
+.env
+.env.*
+npm-debug.log*
+*.log
+
+# Keep the built distribution (dist) — do not exclude it
+# If you want to be explicit: uncomment the line below
+#!dist/
+
+# Files that should NOT be published
+/.npmignore
+

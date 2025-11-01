@@ -1,15 +1,15 @@
 {
-  "name": "@joycrypto/hybrid",
-  "version": "1.0.0",
+  "name": "joycrypto-hybrid",
+  "version": "1.0.2",
   "description": "A hybrid AES + RSA encryption library for JavaScript and TypeScript (client and server compatible).",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
   "scripts": {
