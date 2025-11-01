@@ -1,53 +1,11 @@
-import crypto from "crypto";
 import { AESConfig } from "../types";
 
-export const aesEncrypt = (
-  data: Record<string, any>,
-  config: AESConfig
-): string => {
-  const {
-    secretKey,
-    iv,
-    salt,
-    algorithm,
-    expiresIn,
-    encoding = "base64",
-  } = config;
-
-  const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
-  // IV is provided as a latin1 string (one char per byte). Convert to Buffer.
-  const ivBuf = Buffer.from(iv, "latin1");
-  const cipher = crypto.createCipheriv(algorithm, key, ivBuf);
-
-  const payload = {
-    data,
-    exp: expiresIn ? Date.now() + expiresIn * 1000 : null,
-  };
-
-  const json = JSON.stringify(payload);
-  return cipher.update(json, "utf8", encoding) + cipher.final(encoding);
-};
-
-export const aesDecrypt = (
-  encrypted: string,
-  config: AESConfig
-): Record<string, any> | null => {
-  try {
-    const { secretKey, iv, salt, algorithm, encoding = "base64" } = config;
-    const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
-    const ivBuf = Buffer.from(iv, "latin1");
-    const decipher = crypto.createDecipheriv(algorithm, key, ivBuf);
-
-    const decrypted =
-      decipher.update(encrypted, encoding, "utf8") + decipher.final("utf8");
-    const parsed = JSON.parse(decrypted);
-
-    if (parsed.exp && Date.now() > parsed.exp) throw new Error("Token expired");
-    return parsed.data;
-  } catch {
-    return null;
-  }
-};
+// Isomorphic AES encrypt/decrypt using Node crypto on server and Web Crypto + scrypt-js in browser.
+function nodeCrypto() {
+  // dynamic require to avoid bundler issues
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require("crypto");
+}
 
 function getKeyLength(algorithm: string) {
   switch (algorithm) {
@@ -60,3 +18,193 @@ function getKeyLength(algorithm: string) {
       return 32;
   }
 }
+
+function latin1ToUint8Array(latin1: string) {
+  const arr = new Uint8Array(latin1.length);
+  for (let i = 0; i < latin1.length; i++) arr[i] = latin1.charCodeAt(i) & 0xff;
+  return arr;
+}
+
+function uint8ArrayToBase64(bytes: Uint8Array) {
+  if (typeof window !== "undefined") {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++)
+      binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
+  // Node
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Buffer = require("buffer").Buffer;
+  return Buffer.from(bytes).toString("base64");
+}
+
+function base64ToUint8Array(b64: string) {
+  if (typeof window !== "undefined") {
+    const binary = atob(b64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+  // Node
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Buffer = require("buffer").Buffer;
+  return new Uint8Array(Buffer.from(b64, "base64"));
+}
+
+export const aesEncrypt = async (
+  data: Record<string, any>,
+  config: AESConfig
+): Promise<string> => {
+  const {
+    secretKey,
+    iv,
+    salt,
+    algorithm,
+    expiresIn,
+    encoding = "base64",
+  } = config;
+
+  const payload = {
+    data,
+    exp: expiresIn ? Date.now() + expiresIn * 1000 : null,
+  };
+  const json = JSON.stringify(payload);
+
+  // Node (server) path - use Node crypto synchronously but return Promise
+  if (typeof window === "undefined") {
+    const crypto = nodeCrypto();
+    const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
+    const ivBuf = Buffer.from(iv, "latin1");
+    const cipher = crypto.createCipheriv(algorithm, key, ivBuf);
+    const out = cipher.update(json, "utf8", encoding) + cipher.final(encoding);
+    return out;
+  }
+
+  // Browser path - derive key using scrypt-js and use Web Crypto AES-CBC
+  const scryptModule = await import("scrypt-js");
+  const scrypt = (scryptModule as any).scrypt;
+
+  const enc = new TextEncoder();
+  const pw = enc.encode(secretKey);
+  const saltBuf = enc.encode(salt);
+  const keyLen = getKeyLength(algorithm);
+
+  const derived = await new Promise<Uint8Array>((resolve, reject) => {
+    try {
+      scrypt(
+        Array.from(pw),
+        Array.from(saltBuf),
+        16384,
+        8,
+        1,
+        keyLen,
+        (error: any, _progress: any, key: Uint8Array) => {
+          if (error) return reject(error);
+          if (key) return resolve(key);
+        }
+      );
+    } catch (e) {
+      reject(e);
+    }
+  });
+
+  // @ts-ignore - derived is a Uint8Array
+  const subtle = (window.crypto &&
+    (window.crypto as any).subtle) as SubtleCrypto;
+  const cryptoKey = await subtle.importKey(
+    "raw",
+    derived as any,
+    { name: "AES-CBC" },
+    false,
+    ["encrypt", "decrypt"]
+  );
+
+  const ivArr = latin1ToUint8Array(iv);
+  const dataBuf = enc.encode(json);
+  const encrypted = await subtle.encrypt(
+    { name: "AES-CBC", iv: ivArr },
+    cryptoKey,
+    dataBuf as any
+  );
+  const outBytes = new Uint8Array(encrypted as ArrayBuffer);
+  const b64 = uint8ArrayToBase64(outBytes);
+  return b64;
+};
+
+export const aesDecrypt = async (
+  encrypted: string,
+  config: AESConfig
+): Promise<Record<string, any> | null> => {
+  try {
+    const { secretKey, iv, salt, algorithm, encoding = "base64" } = config;
+
+    // Node path
+    if (typeof window === "undefined") {
+      const crypto = nodeCrypto();
+      const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
+      const ivBuf = Buffer.from(iv, "latin1");
+      const decipher = crypto.createDecipheriv(algorithm, key, ivBuf);
+      const decrypted =
+        decipher.update(encrypted, encoding, "utf8") + decipher.final("utf8");
+      const parsed = JSON.parse(decrypted);
+      if (parsed.exp && Date.now() > parsed.exp)
+        throw new Error("Token expired");
+      return parsed.data;
+    }
+
+    // Browser path
+    const scryptModule = await import("scrypt-js");
+    const scrypt = (scryptModule as any).scrypt;
+
+    const keyLen = getKeyLength(algorithm);
+    const enc = new TextEncoder();
+    const pw = enc.encode(secretKey);
+    const saltBuf = enc.encode(salt);
+
+    const derived = await new Promise<Uint8Array>((resolve, reject) => {
+      try {
+        scrypt(
+          Array.from(pw),
+          Array.from(saltBuf),
+          16384,
+          8,
+          1,
+          keyLen,
+          (error: any, _progress: any, key: Uint8Array) => {
+            if (error) return reject(error);
+            if (key) return resolve(key);
+          }
+        );
+      } catch (e) {
+        reject(e);
+      }
+    });
+
+    // @ts-ignore
+    const subtle = (window.crypto &&
+      (window.crypto as any).subtle) as SubtleCrypto;
+    const cryptoKey = await subtle.importKey(
+      "raw",
+      derived as any,
+      { name: "AES-CBC" },
+      false,
+      ["encrypt", "decrypt"]
+    );
+
+    const ivArr = latin1ToUint8Array(iv);
+    const encryptedBytes = base64ToUint8Array(encrypted);
+    const decryptedBuf = await subtle.decrypt(
+      { name: "AES-CBC", iv: ivArr },
+      cryptoKey,
+      encryptedBytes as any
+    );
+    const dec = new TextDecoder();
+    const json = dec.decode(decryptedBuf as ArrayBuffer);
+    const parsed = JSON.parse(json);
+    if (parsed.exp && Date.now() > parsed.exp) throw new Error("Token expired");
+    return parsed.data;
+  } catch {
+    return null;
+  }
+};

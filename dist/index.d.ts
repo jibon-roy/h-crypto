@@ -19,8 +19,8 @@ interface HybridEncryptConfig {
     rsa: RSAKeyPair;
 }
 
-declare const aesEncrypt: (data: Record<string, any>, config: AESConfig) => string;
-declare const aesDecrypt: (encrypted: string, config: AESConfig) => Record<string, any> | null;
+declare const aesEncrypt: (data: Record<string, any>, config: AESConfig) => Promise<string>;
+declare const aesDecrypt: (encrypted: string, config: AESConfig) => Promise<Record<string, any> | null>;
 
 declare const generateRSAKeys: (bits?: number) => RSAKeyPair;
 declare const rsaEncrypt: (data: string, publicKey: string) => string;
