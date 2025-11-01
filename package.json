@@ -42,8 +42,11 @@
     "nodejs",
     "browser"
   ],
-  "author": "Joy",
+  "author": "Jibon Krishna Roy",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
