@@ -97,6 +97,7 @@ var randomIV = () => (
 export {
   aesDecrypt,
   aesEncrypt,
+  generateRSAKeys as generateKeyPair,
   generateRSAKeys,
   hybridDecrypt,
   hybridEncrypt,

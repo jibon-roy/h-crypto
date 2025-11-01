@@ -32,4 +32,4 @@ declare const hybridDecrypt: (token: string, config: HybridEncryptConfig) => Rec
 declare const randomKey: (length?: number) => string;
 declare const randomIV: () => string;
 
-export { type AESAlgorithm, type AESConfig, type EncodingType, type HybridEncryptConfig, type RSAAlgorithm, type RSAKeyPair, aesDecrypt, aesEncrypt, generateRSAKeys, hybridDecrypt, hybridEncrypt, randomIV, randomKey, rsaDecrypt, rsaEncrypt };
+export { type AESAlgorithm, type AESConfig, type EncodingType, type HybridEncryptConfig, type RSAAlgorithm, type RSAKeyPair, aesDecrypt, aesEncrypt, generateRSAKeys as generateKeyPair, generateRSAKeys, hybridDecrypt, hybridEncrypt, randomIV, randomKey, rsaDecrypt, rsaEncrypt };

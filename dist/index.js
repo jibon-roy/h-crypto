@@ -32,6 +32,7 @@ var index_exports = {};
 __export(index_exports, {
   aesDecrypt: () => aesDecrypt,
   aesEncrypt: () => aesEncrypt,
+  generateKeyPair: () => generateRSAKeys,
   generateRSAKeys: () => generateRSAKeys,
   hybridDecrypt: () => hybridDecrypt,
   hybridEncrypt: () => hybridEncrypt,
@@ -142,6 +143,7 @@ var randomIV = () => (
 0 && (module.exports = {
   aesDecrypt,
   aesEncrypt,
+  generateKeyPair,
   generateRSAKeys,
   hybridDecrypt,
   hybridEncrypt,
