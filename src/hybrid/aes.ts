@@ -19,6 +19,14 @@ function getKeyLength(algorithm: string) {
   }
 }
 
+function hexToUint8Array(hex: string) {
+  const len = hex.length / 2;
+  const arr = new Uint8Array(len);
+  for (let i = 0; i < len; i++)
+    arr[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16) & 0xff;
+  return arr;
+}
+
 function latin1ToUint8Array(latin1: string) {
   const arr = new Uint8Array(latin1.length);
   for (let i = 0; i < latin1.length; i++) arr[i] = latin1.charCodeAt(i) & 0xff;
@@ -75,7 +83,8 @@ export const aesEncrypt = async (
   if (typeof window === "undefined") {
     const crypto = nodeCrypto();
     const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
-    const ivBuf = Buffer.from(iv, "latin1");
+    const isHex = /^[0-9a-fA-F]+$/.test(iv);
+    const ivBuf = Buffer.from(iv, isHex ? "hex" : "latin1");
     const cipher = crypto.createCipheriv(algorithm, key, ivBuf);
     const out = cipher.update(json, "utf8", encoding) + cipher.final(encoding);
     return out;
@@ -96,7 +105,7 @@ export const aesEncrypt = async (
     // hex -> bytes
     const bytes = new Uint8Array(keyLen);
     for (let i = 0; i < keyLen; i++) {
-      bytes[i] = parseInt(secretKey.substr(i * 2, 2), 16);
+      bytes[i] = parseInt(secretKey.slice(i * 2, i * 2 + 2), 16);
     }
     derived = bytes;
   } else {
@@ -148,7 +157,11 @@ export const aesEncrypt = async (
     ["encrypt", "decrypt"]
   );
 
-  const ivArr = latin1ToUint8Array(iv);
+  // IV may be provided as a hex string (preferred) or a latin1 byte string for
+  // backwards compatibility. Convert appropriately to a Uint8Array.
+  const ivArr = /^[0-9a-fA-F]+$/.test(iv)
+    ? hexToUint8Array(iv)
+    : latin1ToUint8Array(iv);
   const dataBuf = enc.encode(json);
   const encrypted = await subtle.encrypt(
     { name: "AES-CBC", iv: ivArr },
@@ -171,7 +184,8 @@ export const aesDecrypt = async (
     if (typeof window === "undefined") {
       const crypto = nodeCrypto();
       const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
-      const ivBuf = Buffer.from(iv, "latin1");
+      const isHex = /^[0-9a-fA-F]+$/.test(iv);
+      const ivBuf = Buffer.from(iv, isHex ? "hex" : "latin1");
       const decipher = crypto.createDecipheriv(algorithm, key, ivBuf);
       const decrypted =
         decipher.update(encrypted, encoding, "utf8") + decipher.final("utf8");
@@ -194,7 +208,7 @@ export const aesDecrypt = async (
     if (hexRegex.test(secretKey) && secretKey.length === keyLen * 2) {
       const bytes = new Uint8Array(keyLen);
       for (let i = 0; i < keyLen; i++) {
-        bytes[i] = parseInt(secretKey.substr(i * 2, 2), 16);
+        bytes[i] = parseInt(secretKey.slice(i * 2, i * 2 + 2), 16);
       }
       derived = bytes;
     } else {
@@ -239,7 +253,9 @@ export const aesDecrypt = async (
       ["encrypt", "decrypt"]
     );
 
-    const ivArr = latin1ToUint8Array(iv);
+    const ivArr = /^[0-9a-fA-F]+$/.test(iv)
+      ? hexToUint8Array(iv)
+      : latin1ToUint8Array(iv);
     const encryptedBytes = base64ToUint8Array(encrypted);
     const decryptedBuf = await subtle.decrypt(
       { name: "AES-CBC", iv: ivArr },
@@ -251,6 +267,110 @@ export const aesDecrypt = async (
     const parsed = JSON.parse(json);
     if (parsed.exp && Date.now() > parsed.exp) throw new Error("Token expired");
     return parsed.data;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Check whether a token is expired. Returns:
+ * - true if token is expired
+ * - false if token is valid (not expired)
+ * - null if token could not be decrypted / invalid
+ */
+export const isTokenExpired = async (
+  token: string,
+  config: AESConfig
+): Promise<boolean | null> => {
+  try {
+    const { secretKey, iv, salt, algorithm, encoding = "base64" } = config;
+
+    // Node path
+    if (typeof window === "undefined") {
+      const crypto = nodeCrypto();
+      const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
+      const isHex = /^[0-9a-fA-F]+$/.test(iv);
+      const ivBuf = Buffer.from(iv, isHex ? "hex" : "latin1");
+      const decipher = crypto.createDecipheriv(algorithm, key, ivBuf);
+      const decrypted =
+        decipher.update(token, encoding, "utf8") + decipher.final("utf8");
+      const parsed = JSON.parse(decrypted);
+      if (parsed.exp && Date.now() > parsed.exp) return true;
+      return false;
+    }
+
+    // Browser path
+    const scryptModule = await import("scrypt-js");
+    const scrypt = (scryptModule as any).scrypt;
+
+    const keyLen = getKeyLength(algorithm);
+    const enc = new TextEncoder();
+
+    // Support hex secretKey directly (raw key bytes) if length matches
+    const hexRegex = /^[0-9a-fA-F]+$/;
+    let derived: Uint8Array;
+    if (hexRegex.test(secretKey) && secretKey.length === keyLen * 2) {
+      const bytes = new Uint8Array(keyLen);
+      for (let i = 0; i < keyLen; i++) {
+        bytes[i] = parseInt(secretKey.slice(i * 2, i * 2 + 2), 16);
+      }
+      derived = bytes;
+    } else {
+      const pw = enc.encode(secretKey);
+      const saltBuf = enc.encode(salt);
+      derived = await new Promise<Uint8Array>((resolve, reject) => {
+        try {
+          scrypt(
+            Array.from(pw),
+            Array.from(saltBuf),
+            16384,
+            8,
+            1,
+            keyLen,
+            (...cbArgs: any[]) => {
+              const candidate = cbArgs[cbArgs.length - 1];
+              if (
+                candidate &&
+                (candidate instanceof Uint8Array || Array.isArray(candidate))
+              ) {
+                return resolve(new Uint8Array(candidate));
+              }
+              const maybeErr = cbArgs[0];
+              if (maybeErr && maybeErr instanceof Error)
+                return reject(maybeErr);
+            }
+          );
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+
+    // @ts-ignore
+    const subtle = (window.crypto &&
+      (window.crypto as any).subtle) as SubtleCrypto;
+    const cryptoKey = await subtle.importKey(
+      "raw",
+      derived as any,
+      { name: "AES-CBC" },
+      false,
+      ["encrypt", "decrypt"]
+    );
+
+    const ivArr = /^[0-9a-fA-F]+$/.test(iv)
+      ? hexToUint8Array(iv)
+      : latin1ToUint8Array(iv);
+    const encryptedBytes = base64ToUint8Array(token);
+    const decryptedBuf = await subtle.decrypt(
+      { name: "AES-CBC", iv: ivArr },
+      cryptoKey,
+      encryptedBytes as any
+    );
+    const dec = new TextDecoder();
+    const json = dec.decode(decryptedBuf as ArrayBuffer);
+    const parsed = JSON.parse(json);
+    if (parsed.exp && Date.now() > parsed.exp) return true;
+    return false;
   } catch {
     return null;
   }
