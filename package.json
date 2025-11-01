@@ -72,7 +72,7 @@
   "dependencies": {
     "crypto-js": "^4.2.0",
     "glob": "^11.0.3",
-    "libsodium-wrappers": "^0.7.9",
+    "libsodium-wrappers": "^0.7.15",
     "scrypt-js": "^3.0.1"
   }
 }
