@@ -1,14 +1,14 @@
 {
-  "name": "hcrypto",
+  "name": "h-crypto",
   "version": "1.1.0",
   "description": "A hybrid AES + RSA encryption library for JavaScript and TypeScript (client and server compatible).",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jibon-roy/hcrypto.git"
+    "url": "git+https://github.com/jibon-roy/h-crypto.git"
   },
-  "homepage": "https://github.com/jibon-roy/hcrypto#readme",
+  "homepage": "https://github.com/jibon-roy/h-crypto#readme",
   "bugs": {
-    "url": "https://github.com/jibon-roy/hcrypto/issues"
+    "url": "https://github.com/jibon-roy/h-crypto/issues"
   },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -37,8 +37,8 @@
     "crypto",
     "cryptography",
     "encryption",
-    "hcrypto",
-    "hcrypto",
+    "h-crypto",
+    "h-crypto",
     "hybrid-encryption",
     "asymmetric-encryption",
     "symmetric-encryption",

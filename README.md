@@ -1,13 +1,13 @@
-# hcrypto
+# h-crypto
 
 A hybrid encryption helper focused on providing cross-platform (Node + browser-ready APIs) building blocks for hybrid encryption flows. This project provides AES helpers, sealed-box wrappers (libsodium), key generation utilities, and an easy hybrid envelope pattern.
 
 ## Install
 
 ```powershell
-npm install hcrypto
+npm install h-crypto
 # or
-pnpm add hcrypto
+pnpm add h-crypto
 ```
 
 ## Quick notes about platform compatibility
@@ -21,7 +21,7 @@ The package includes helpers to generate hex secrets and hex IVs that are easy t
 
 ```tsx
 import React from "react";
-import { aesEncrypt, aesDecrypt, randomKey, randomIVHex } from "hcrypto";
+import { aesEncrypt, aesDecrypt, randomKey, randomIVHex } from "h-crypto";
 
 async function demo() {
   // prefer AES-256
@@ -57,7 +57,7 @@ Server code can keep private keys and secrets hidden. Here's a minimal Next.js A
 
 ```js
 // pages/api/decrypt-token.js (Next.js API route)
-import { hybridDecrypt } from "hcrypto";
+import { hybridDecrypt } from "h-crypto";
 
 // Keep keys in a secure store in production. For demo we use process.env or in-memory.
 const KEYPAIR = {
@@ -85,7 +85,7 @@ Server-side Express example (Node):
 
 ```js
 const express = require("express");
-const { hybridDecrypt, generateSodiumKeyPair } = require("hcrypto");
+const { hybridDecrypt, generateSodiumKeyPair } = require("h-crypto");
 
 const app = express();
 app.use(express.json());
@@ -108,23 +108,24 @@ app.use(express.json());
 
 ## API and helpers
 
+
 Below is a quick reference table for the most-used functions, their main parameters and return values. For all functions that accept an `AESConfig`, see the `Types` section in the source (`src/types.ts`).
 
-| Function                                                  | Main parameters                                 |                              Returns | Notes / expected input                                                                                                                                                   |
-| --------------------------------------------------------- | ----------------------------------------------- | -----------------------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| aesEncrypt(data, config)                                  | data: object, config: AESConfig                 |         Promise<string> (ciphertext) | `config.secretKey` can be a hex key (raw) or a passphrase (KDF). `config.iv` accepts hex (preferred) or legacy latin1. `config.expiresIn` sets payload expiry (seconds). |
-| aesDecrypt(token, config)                                 | token: string, config: AESConfig                |                       Promise<object | null>                                                                                                                                                                    | Returns decrypted object or null on failure/expired. Provide same config used to encrypt (secretKey, iv, salt, algorithm). |
-| isTokenExpired(token, config)                             | token: string, config: AESConfig                |                      Promise<boolean | null>                                                                                                                                                                    | true = expired, false = valid, null = invalid/unreadable.                                                                  |
-| randomKey(length)                                         | length: number (hex chars)                      |                         string (hex) | Returns random hex string. For AES-256 provide 64 (hex chars) → 32 bytes.                                                                                                |
-| randomIVHex(bytes)                                        | bytes: number                                   |                         string (hex) | Returns hex IV (bytes \* 2 hex chars). Example: randomIVHex(16) → 32 hex chars.                                                                                          |
-| randomIV()                                                | —                                               |                      string (latin1) | Legacy helper: returns 16-char latin1 string (each char = one byte). Kept for backwards compatibility.                                                                   |
-| generateSodiumKeyPair()                                   | —                                               |   Promise<{ publicKey, privateKey }> | Base64-encoded sodium keypair (ready for `sodiumSeal`/`sodiumUnseal`). Works in browser & Node.                                                                          |
-| sodiumSeal(plaintext, publicKey)                          | plaintext: string, publicKey: string (base64)   |             Promise<string> (base64) | Sealed-box encrypts data to recipient public key (no sender key needed).                                                                                                 |
-| sodiumUnseal(cipherB64, publicKey, privateKey)            | cipherB64: string, publicKey/privateKey: base64 |          Promise<string> (plaintext) | Opens sealed box with recipient keypair.                                                                                                                                 |
-| generateRSAKeys(bits?)                                    | bits?: number                                   | { publicKey, privateKey, algorithm } | Legacy Node-only RSA keypair (PEM). Still exported for compatibility.                                                                                                    |
-| rsaEncrypt(data, publicKey) / rsaDecrypt(enc, privateKey) | data/string, PEM keys                           |                      string / string | Legacy RSA helpers (Node-only). Prefer sodium sealed boxes for browser compatibility.                                                                                    |
-| hybridEncrypt(data, config)                               | data: object, config: HybridEncryptConfig       |      Promise<string> (envelope JSON) | Creates an envelope: { encryptedData, encryptedKey } where encryptedKey is sealed with sodium by default.                                                                |
-| hybridDecrypt(token, config)                              | token: string, config: HybridEncryptConfig      |                       Promise<object | null>                                                                                                                                                                    | Decrypts envelope with private key + AES config, returns original object or null.                                          |
+| Function | Main parameters | Returns | Notes / expected input |
+| --- | --- | ---: | --- |
+| `aesEncrypt(data, config)` | data: object, config: `AESConfig` | `Promise<string>` (ciphertext) | `config.secretKey` can be a hex key (raw) or a passphrase (KDF). `config.iv` accepts hex (preferred) or legacy latin1. `config.expiresIn` sets payload expiry (seconds). |
+| `aesDecrypt(token, config)` | token: string, config: `AESConfig` | `Promise<object | null>` | Returns decrypted object or `null` on failure/expired. Provide same config used to encrypt (`secretKey`, `iv`, `salt`, `algorithm`). |
+| `isTokenExpired(token, config)` | token: string, config: `AESConfig` | `Promise<boolean | null>` | `true` = expired, `false` = valid, `null` = invalid/unreadable. |
+| `randomKey(length)` | length: number (hex chars) | `string` (hex) | Returns random hex string. For AES-256 provide `64` (hex chars) → 32 bytes. |
+| `randomIVHex(bytes)` | bytes: number | `string` (hex) | Returns hex IV (bytes * 2 hex chars). Example: `randomIVHex(16)` → 32 hex chars. |
+| `randomIV()` | — | `string` (latin1) | Legacy helper: returns 16-char latin1 string (each char = one byte). Kept for backwards compatibility. |
+| `generateSodiumKeyPair()` | — | `Promise<{ publicKey, privateKey }>` | Base64-encoded sodium keypair (ready for `sodiumSeal`/`sodiumUnseal`). Works in browser & Node. |
+| `sodiumSeal(plaintext, publicKey)` | plaintext: string, publicKey: string (base64) | `Promise<string>` (base64) | Sealed-box encrypts data to recipient public key (no sender key needed). |
+| `sodiumUnseal(cipherB64, publicKey, privateKey)` | cipherB64: string, publicKey/privateKey: base64 | `Promise<string>` (plaintext) | Opens sealed box with recipient keypair. |
+| `generateRSAKeys(bits?)` | bits?: number | `{ publicKey, privateKey, algorithm }` | Legacy Node-only RSA keypair (PEM). Still exported for compatibility. |
+| `rsaEncrypt(data, publicKey)` / `rsaDecrypt(enc, privateKey)` | data/string, PEM keys | string / string | Legacy RSA helpers (Node-only). Prefer sodium sealed boxes for browser compatibility. |
+| `hybridEncrypt(data, config)` | data: object, config: `HybridEncryptConfig` | `Promise<string>` (envelope JSON) | Creates an envelope: `{ encryptedData, encryptedKey }` where `encryptedKey` is sealed with sodium by default. |
+| `hybridDecrypt(token, config)` | token: string, config: `HybridEncryptConfig` | `Promise<object | null>` | Decrypts envelope with private key + AES config, returns original object or `null`. |
 
 Examples / input expectations
 
