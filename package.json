@@ -2,6 +2,14 @@
   "name": "joycrypto-hybrid",
   "version": "1.0.2",
   "description": "A hybrid AES + RSA encryption library for JavaScript and TypeScript (client and server compatible).",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jibon-roy/joycrypto-hybrid.git"
+  },
+  "homepage": "https://github.com/jibon-roy/joycrypto-hybrid#readme",
+  "bugs": {
+    "url": "https://github.com/jibon-roy/joycrypto-hybrid/issues"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
