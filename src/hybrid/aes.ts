@@ -3,7 +3,7 @@ import { AESConfig } from "../types";
 // Isomorphic AES encrypt/decrypt using Node crypto on server and Web Crypto + scrypt-js in browser.
 function nodeCrypto() {
   // dynamic require to avoid bundler issues
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   return require("crypto");
 }
 
@@ -41,7 +41,7 @@ function uint8ArrayToBase64(bytes: Uint8Array) {
     return btoa(binary);
   }
   // Node
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   const Buffer = require("buffer").Buffer;
   return Buffer.from(bytes).toString("base64");
 }
@@ -55,7 +55,7 @@ function base64ToUint8Array(b64: string) {
     return bytes;
   }
   // Node
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   const Buffer = require("buffer").Buffer;
   return new Uint8Array(Buffer.from(b64, "base64"));
 }
@@ -81,6 +81,19 @@ export const aesEncrypt = async (
 
   // Node (server) path - use Node crypto synchronously but return Promise
   if (typeof window === "undefined") {
+    // Basic validation: salt must be present
+    if (!salt) throw new Error("Missing salt for key derivation");
+    // IV length validation: if hex, must represent 16 bytes for AES block size
+    const isHexIv = /^[0-9a-fA-F]+$/.test(iv);
+    if (isHexIv) {
+      if (iv.length !== 32)
+        throw new Error("Invalid IV length: expected 16 bytes (32 hex chars)");
+    } else {
+      if (iv.length !== 16)
+        throw new Error(
+          "Invalid IV length: expected 16 bytes (latin1 string length 16)"
+        );
+    }
     const crypto = nodeCrypto();
     const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
     const isHex = /^[0-9a-fA-F]+$/.test(iv);
@@ -96,6 +109,20 @@ export const aesEncrypt = async (
 
   const enc = new TextEncoder();
   const keyLen = getKeyLength(algorithm);
+
+  // Basic validation: salt must be present
+  if (!salt) throw new Error("Missing salt for key derivation");
+  // IV length validation
+  const isHexIv = /^[0-9a-fA-F]+$/.test(iv);
+  if (isHexIv) {
+    if (iv.length !== 32)
+      throw new Error("Invalid IV length: expected 16 bytes (32 hex chars)");
+  } else {
+    if (iv.length !== 16)
+      throw new Error(
+        "Invalid IV length: expected 16 bytes (latin1 string length 16)"
+      );
+  }
 
   // If secretKey looks like a hex string of the correct length, use it directly as the
   // derived key (hex -> bytes). This allows callers to pass a hex secret directly.
@@ -182,6 +209,21 @@ export const aesDecrypt = async (
 
     // Node path
     if (typeof window === "undefined") {
+      // Basic validation: salt must be present
+      if (!salt) throw new Error("Missing salt for key derivation");
+      // IV length validation
+      const isHexIv = /^[0-9a-fA-F]+$/.test(iv);
+      if (isHexIv) {
+        if (iv.length !== 32)
+          throw new Error(
+            "Invalid IV length: expected 16 bytes (32 hex chars)"
+          );
+      } else {
+        if (iv.length !== 16)
+          throw new Error(
+            "Invalid IV length: expected 16 bytes (latin1 string length 16)"
+          );
+      }
       const crypto = nodeCrypto();
       const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
       const isHex = /^[0-9a-fA-F]+$/.test(iv);
@@ -201,6 +243,20 @@ export const aesDecrypt = async (
 
     const keyLen = getKeyLength(algorithm);
     const enc = new TextEncoder();
+
+    // Basic validation: salt must be present
+    if (!salt) throw new Error("Missing salt for key derivation");
+    // IV length validation
+    const isHexIv2 = /^[0-9a-fA-F]+$/.test(iv);
+    if (isHexIv2) {
+      if (iv.length !== 32)
+        throw new Error("Invalid IV length: expected 16 bytes (32 hex chars)");
+    } else {
+      if (iv.length !== 16)
+        throw new Error(
+          "Invalid IV length: expected 16 bytes (latin1 string length 16)"
+        );
+    }
 
     // Support hex secretKey directly (raw key bytes) if length matches
     const hexRegex = /^[0-9a-fA-F]+$/;
@@ -287,6 +343,21 @@ export const isTokenExpired = async (
 
     // Node path
     if (typeof window === "undefined") {
+      // Basic validation: salt must be present
+      if (!salt) throw new Error("Missing salt for key derivation");
+      // IV length validation
+      const isHexIv = /^[0-9a-fA-F]+$/.test(iv);
+      if (isHexIv) {
+        if (iv.length !== 32)
+          throw new Error(
+            "Invalid IV length: expected 16 bytes (32 hex chars)"
+          );
+      } else {
+        if (iv.length !== 16)
+          throw new Error(
+            "Invalid IV length: expected 16 bytes (latin1 string length 16)"
+          );
+      }
       const crypto = nodeCrypto();
       const key = crypto.scryptSync(secretKey, salt, getKeyLength(algorithm));
       const isHex = /^[0-9a-fA-F]+$/.test(iv);
@@ -306,6 +377,19 @@ export const isTokenExpired = async (
     const keyLen = getKeyLength(algorithm);
     const enc = new TextEncoder();
 
+    // Basic validation: salt must be present
+    if (!salt) throw new Error("Missing salt for key derivation");
+    // IV length validation
+    const isHexIv2 = /^[0-9a-fA-F]+$/.test(iv);
+    if (isHexIv2) {
+      if (iv.length !== 32)
+        throw new Error("Invalid IV length: expected 16 bytes (32 hex chars)");
+    } else {
+      if (iv.length !== 16)
+        throw new Error(
+          "Invalid IV length: expected 16 bytes (latin1 string length 16)"
+        );
+    }
     // Support hex secretKey directly (raw key bytes) if length matches
     const hexRegex = /^[0-9a-fA-F]+$/;
     let derived: Uint8Array;

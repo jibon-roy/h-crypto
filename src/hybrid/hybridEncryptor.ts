@@ -40,7 +40,10 @@ export const hybridDecrypt = async (
     );
 
     // Merge decrypted AES config with provided
-    const aesConfig = { ...config.aes, ...keyInfo };
+    // Keep the provided AES IV (do not allow the sealed key info to override IV),
+    // but allow the secretKey/salt from keyInfo to be used unless explicitly
+    // overridden by the provided config.aes.
+    const aesConfig = { ...keyInfo, ...config.aes };
 
     return await aesDecrypt(encryptedData, aesConfig);
   } catch {

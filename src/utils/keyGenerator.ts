@@ -2,7 +2,7 @@
 // Uses Web Crypto in browsers and Node crypto on server.
 function nodeCrypto() {
   // dynamic require to avoid bundler issues in browser
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   return require("crypto");
 }
 

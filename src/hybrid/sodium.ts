@@ -12,7 +12,7 @@ function toBase64(buf: Uint8Array) {
     return btoa(binary);
   }
   // Node
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   const Buffer = require("buffer").Buffer;
   return Buffer.from(buf).toString("base64");
 }
@@ -26,7 +26,6 @@ function fromBase64(b64: string) {
     return bytes;
   }
   // Node
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Buffer = require("buffer").Buffer;
   return new Uint8Array(Buffer.from(b64, "base64"));
 }
