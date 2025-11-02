@@ -620,6 +620,18 @@ var randomIVHex = (bytes = 16) => {
   const crypto2 = nodeCrypto2();
   return crypto2.randomBytes(bytes).toString("hex").slice(0, hexLen);
 };
+var randomIVForAlgorithm = (algorithm, hex = true) => {
+  const isGcm2 = /-gcm$/.test(algorithm);
+  const bytes = isGcm2 ? 12 : 16;
+  if (hex) return randomIVHex(bytes);
+  if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
+    const arr = new Uint8Array(bytes);
+    window.crypto.getRandomValues(arr);
+    return String.fromCharCode(...Array.from(arr));
+  }
+  const crypto2 = nodeCrypto2();
+  return crypto2.randomBytes(bytes).toString("latin1").slice(0, bytes);
+};
 export {
   aesDecrypt,
   aesEncrypt,
@@ -629,6 +641,7 @@ export {
   hybridEncrypt,
   isTokenExpired,
   randomIV,
+  randomIVForAlgorithm,
   randomIVHex,
   randomKey,
   rsaDecrypt,

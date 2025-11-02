@@ -6,6 +6,8 @@ function nodeCrypto() {
   return require("crypto");
 }
 
+import type { AESAlgorithm } from "../types";
+
 export const randomKey = (length = 32): string => {
   if (
     typeof window !== "undefined" &&
@@ -66,4 +68,31 @@ export const randomIVHex = (bytes = 16): string => {
 
   const crypto = nodeCrypto();
   return crypto.randomBytes(bytes).toString("hex").slice(0, hexLen);
+};
+
+// Return an IV sized appropriately for the AES algorithm.
+// - For AES-GCM algorithms, return 12 bytes (96 bits) which is the recommended nonce length for GCM.
+// - For other AES modes (CBC), return 16 bytes.
+// By default this returns a hex string; set `hex=false` to get a latin1-like raw byte string.
+export const randomIVForAlgorithm = (
+  algorithm: AESAlgorithm,
+  hex = true
+): string => {
+  const isGcm = /-gcm$/.test(algorithm);
+  const bytes = isGcm ? 12 : 16;
+  if (hex) return randomIVHex(bytes);
+
+  // latin1-like raw string
+  if (
+    typeof window !== "undefined" &&
+    window.crypto &&
+    window.crypto.getRandomValues
+  ) {
+    const arr = new Uint8Array(bytes);
+    window.crypto.getRandomValues(arr);
+    return String.fromCharCode(...Array.from(arr));
+  }
+
+  const crypto = nodeCrypto();
+  return crypto.randomBytes(bytes).toString("latin1").slice(0, bytes);
 };

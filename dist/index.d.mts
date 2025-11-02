@@ -39,5 +39,6 @@ declare const hybridDecrypt: (token: string, config: HybridEncryptConfig) => Pro
 declare const randomKey: (length?: number) => string;
 declare const randomIV: () => string;
 declare const randomIVHex: (bytes?: number) => string;
+declare const randomIVForAlgorithm: (algorithm: AESAlgorithm, hex?: boolean) => string;
 
-export { type AESAlgorithm, type AESConfig, type EncodingType, type HybridEncryptConfig, type RSAAlgorithm, type RSAKeyPair, aesDecrypt, aesEncrypt, generateRSAKeys as generateKeyPair, generateRSAKeys, hybridDecrypt, hybridEncrypt, isTokenExpired, randomIV, randomIVHex, randomKey, rsaDecrypt, rsaEncrypt };
+export { type AESAlgorithm, type AESConfig, type EncodingType, type HybridEncryptConfig, type RSAAlgorithm, type RSAKeyPair, aesDecrypt, aesEncrypt, generateRSAKeys as generateKeyPair, generateRSAKeys, hybridDecrypt, hybridEncrypt, isTokenExpired, randomIV, randomIVForAlgorithm, randomIVHex, randomKey, rsaDecrypt, rsaEncrypt };
