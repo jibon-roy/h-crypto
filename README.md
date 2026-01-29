@@ -1,6 +1,8 @@
 # h-crypto
 
-A hybrid encryption helper focused on providing cross-platform (Node + browser-ready APIs) building blocks for hybrid encryption flows. This project provides AES helpers, sealed-box wrappers (libsodium), key generation utilities, and an easy hybrid envelope pattern.
+A hybrid encryption helper focused on providing cross-platform (Node + browser-ready APIs) building blocks for hybrid encryption flows. This project provides AES helpers, sealed-box wrappers (libsodium), key generation utilities, and an easy hybrid envelope pattern. 
+
+Visit the [h-crypto website](https://h-crypto.vercel.app/) for more details and examples.
 
 ## Install
 

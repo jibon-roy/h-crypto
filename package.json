@@ -1,12 +1,12 @@
 {
   "name": "h-crypto",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Hybrid encryption for JavaScript/TypeScript — AES + libsodium sealed-box envelope pattern. Browser & Node compatible, key generation, and easy hybrid workflows.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jibon-roy/h-crypto.git"
   },
-  "homepage": "https://github.com/jibon-roy/h-crypto#readme",
+  "homepage": "https://h-crypto.vercel.app/",
   "bugs": {
     "url": "https://github.com/jibon-roy/h-crypto/issues"
   },
