@@ -19,14 +19,6 @@ pnpm add h-crypto
 
 The package includes helpers to generate hex secrets and hex IVs that are easy to copy/paste into front-end code. Below is a minimal client-only React component example (adapted for Next.js client components):
 
-````tsx
-import React from "react";
-import { aesEncrypt, aesDecrypt, randomKey, randomIVHex } from "h-crypto";
-
-async function demo() {
-  // prefer AES-256
-  const secretHex = randomKey(64); // 64 hex chars -> 32 bytes
-   # h-crypto
 
    ![npm version](https://img.shields.io/npm/v/h-crypto.svg)
    ![npm downloads](https://img.shields.io/npm/dm/h-crypto.svg)
@@ -39,7 +31,7 @@ async function demo() {
 
    ## Install
 
-   ```powershell
+```powershell
    npm install h-crypto
    # or
    pnpm add h-crypto
